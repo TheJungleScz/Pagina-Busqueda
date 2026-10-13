@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Huellas - Desde Cero</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo">
+      <span class="logo-icon">🐾</span>
+      <div>
+        <h1>Huellas</h1>
+        <p>Encuentra a tu mejor amigo</p>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center">
+      <div class="contador" id="contador">0 encontrados</div>
+      <button id="btn-admin" class="btn-admin" onclick="toggleAdmin()">🔐 Admin</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button id="btn-buscar" class="tab active" onclick="cambiarTab('buscar')">🔍 Buscar</button>
+    <button id="btn-reportar" class="tab" onclick="cambiarTab('reportar')">➕ Encontrado</button>
+    <button id="btn-reportar-perdido" class="tab" onclick="cambiarTab('reportar-perdido')">➕ Perdido</button>
+    <button id="btn-todos" class="tab" onclick="cambiarTab('todos')">🐶 Encontrados</button>
+    <button id="btn-perdidos" class="tab" onclick="cambiarTab('perdidos')">😢 Perdidos</button>
+  </nav>
+
+  <main class="main">
+    <section id="vista-buscar" class="vista">
+      <div class="panel-izq">
+        <h2>Mi perro perdido</h2>
+        <p class="sub">Sube foto y descripción</p>
+        <div id="zona-lost" class="drop-zone">
+          <input type="file" id="file-lost" accept="image/*" hidden>
+          <div id="preview-lost"><span class="icon">📷</span><p><b>Arrastra tu foto aquí</b></p><small>JPG, PNG</small></div>
+        </div>
+        <textarea id="desc-lost" placeholder="Ej: Mi pitbull gris Thor, 2 años, collar rojo..."></textarea>
+        <div class="row">
+          <select id="raza-lost"><option value="">Raza</option><option>Pitbull</option><option>Labrador</option><option>Criollo</option><option>Pastor Alemán</option><option>Bulldog</option><option>Chihuahua</option></select>
+          <input id="color-lost" placeholder="Color">
+        </div>
+        <input id="zona-lost-input" placeholder="Zona donde se perdió">
+        <button class="btn-blue" onclick="buscarPerdido()">Buscar coincidencias ✨</button>
+        <p id="cargando" class="hidden">🔎 Analizando...</p>
+      </div>
+      <div class="panel-der">
+        <h3>Resultados similares</h3>
+        <div id="resultados" class="grid"></div>
+        <div id="sin-resultados" class="vacio">Sube la foto de tu perdido para buscar</div>
+      </div>
+    </section>
+
+    <section id="vista-reportar" class="vista hidden">
+      <div class="form-encontrado">
+        <h2>Reportar perro encontrado</h2>
+        <p class="sub">Se guardará automáticamente en 🐶 Encontrados</p>
+        <div id="zona-found" class="drop-zone naranja">
+          <input type="file" id="file-found" accept="image/*" hidden>
+          <div id="preview-found"><span class="icon">🐶📸</span><p><b>Foto del perro encontrado</b></p></div>
+        </div>
+        <textarea id="desc-found" placeholder="Descripción del encontrado..."></textarea>
+        <div class="row">
+          <select id="raza-found"><option>Pitbull</option><option>Labrador</option><option>Criollo</option><option>Pastor Alemán</option><option>Bulldog</option><option>Chihuahua</option></select>
+          <input id="color-found" placeholder="Color">
+        </div>
+        <div class="row">
+          <input id="zona-found-input" placeholder="¿Dónde lo encontraste?">
+          <input id="contact-found" placeholder="WhatsApp">
+        </div>
+        <button class="btn-orange" onclick="publicarEncontrado()">Publicar como Encontrado ✅</button>
+      </div>
+    </section>
+
+    <section id="vista-todos" class="vista hidden">
+      <h2>Perros esperando a sus dueños</h2>
+      <div id="grid-todos" class="grid"></div>
+    </section>
+
+    <section id="vista-reportar-perdido" class="vista hidden">
+      <div class="form-encontrado" style="border-color:#a0d2ff;">
+        <h2>Reportar perro perdido</h2>
+        <p class="sub">Se guardará en 😢 Perdidos</p>
+        <div id="zona-lost-pub" class="drop-zone" style="background:#f0f8ff; border-color:#a0d2ff;">
+          <input type="file" id="file-lost-pub" accept="image/*" hidden>
+          <div id="preview-lost-pub"><span class="icon">😢📸</span><p><b>Foto de tu perro perdido</b></p></div>
+        </div>
+        <textarea id="desc-lost-pub" placeholder="Ej: Se perdió mi pastor alemán Max..."></textarea>
+        <div class="row">
+          <select id="raza-lost-pub"><option>Pitbull</option><option>Labrador</option><option>Criollo</option><option>Pastor Alemán</option><option>Bulldog</option><option>Chihuahua</option></select>
+          <input id="color-lost-pub" placeholder="Color">
+        </div>
+        <div class="row">
+          <input id="zona-lost-pub-input" placeholder="¿Dónde se perdió?">
+          <input id="contact-lost-pub" placeholder="WhatsApp">
+        </div>
+        <button class="btn-blue" onclick="publicarPerdido()">Publicar como Perdido 🔍</button>
+      </div>
+    </section>
+
+    <section id="vista-perdidos" class="vista hidden">
+      <h2>Perros perdidos reportados 😢</h2>
+      <p class="sub">Si encontraste uno de estos, contacta a su dueño</p>
+      <div id="grid-perdidos" class="grid"></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="app.js"></script>
+  <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+    <div class="toggle-track">
+      <div class="toggle-thumb" id="toggleThumb">
+        <span class="icon-sun">☀️</span>
+        <span class="icon-moon">🌙</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
