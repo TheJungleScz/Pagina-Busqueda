@@ -69,13 +69,7 @@ function toggleAdmin(){
     actualizarContador(); mostrarTodos(); mostrarPerdidos();
     return;
   }
-  const pass = prompt('Contraseña de administrador:');
-  if(pass === ADMIN_PASSWORD){
-    isAdmin = true;
-    localStorage.setItem('isAdmin','true');
-    toast('✅ Modo Admin activado');
-    actualizarContador(); mostrarTodos(); mostrarPerdidos();
-  } else if(pass!== null){ alert('Contraseña incorrecta'); }
+  mostrarModalAdmin();
 }
 
 function cambiarTab(nombre){
@@ -152,7 +146,7 @@ async function buscarPerdido(){
   const color = document.getElementById('color-lost').value.toLowerCase().trim();
   const zona = document.getElementById('zona-lost-input').value.toLowerCase().trim();
 
-  if(!fotoPerdidoBase64){ if (!fotoPerdidoBase64) { mostrarModalIA(); return; }
+  if(!fotoPerdidoBase64){ mostrarModalIA(); return; }
   if(!modeloIA){ alert('La IA aún está cargando, espera 5 segundos'); return; }
 
   document.getElementById('cargando').classList.remove('hidden');
@@ -160,35 +154,47 @@ async function buscarPerdido(){
 
   const embBusqueda = await getEmbedding(fotoPerdidoBase64);
 
-  let conScore = perrosEncontrados.map((p,i)=>{
+  let candidatos = perrosEncontrados.map((p,i) => ({p, idx: i})).filter(({p}) => {
+    if(raza && p.raza.toLowerCase() !== raza) return false;
+    return true;
+  });
+
+  const cont = document.getElementById('resultados');
+  const sinRes = document.getElementById('sin-resultados');
+
+  if(candidatos.length === 0){
+    document.getElementById('cargando').classList.add('hidden');
+    sinRes.classList.remove('hidden');
+    sinRes.innerHTML = `❌ No hay perros de raza <b>${raza}</b> reportados como encontrados.`;
+    cont.innerHTML = '';
+    return;
+  }
+
+  let conScore = candidatos.map(({p, idx})=>{
     let score = 0;
-    const simImg = embeddingsEncontrados[i]? similitudCoseno(embBusqueda, embeddingsEncontrados[i]) : 0;
+    const simImg = embeddingsEncontrados[idx]? similitudCoseno(embBusqueda, embeddingsEncontrados[idx]) : 0;
     const scoreImg = Math.round(simImg * 70); 
 
     let scoreTexto = 0;
-    if(raza && p.raza.toLowerCase().includes(raza)) scoreTexto += 10;
-    if(color && p.color.toLowerCase().includes(color)) scoreTexto += 5;
-    if(zona && p.zona.toLowerCase().includes(zona)) scoreTexto += 5;
+    if(color && p.color.toLowerCase().includes(color)) scoreTexto += 10;
+    if(zona && p.zona.toLowerCase().includes(zona)) scoreTexto += 10;
     if(desc){
       let palabras = desc.split(' ').filter(w=>w.length>3);
       let comunes = palabras.filter(w=> p.desc.toLowerCase().includes(w)).length;
-      scoreTexto += Math.min(10, comunes * 2);
+      scoreTexto += Math.min(20, comunes * 3);
     }
 
     score = scoreImg + scoreTexto;
-
     if(fotoPerdidoBase64 === p.img) score = 100;
 
     return {...p, score: Math.min(100, Math.max(10, Math.round(score)))};
   }).sort((a,b)=>b.score-a.score).filter(p=>p.score >= 25);
 
   document.getElementById('cargando').classList.add('hidden');
-  const cont = document.getElementById('resultados');
-  const sinRes = document.getElementById('sin-resultados');
 
   if(conScore.length===0){
     sinRes.classList.remove('hidden');
-    sinRes.innerHTML = `❌ Ningún perro supera el 25% de similitud con IA.`;
+    sinRes.innerHTML = `❌ Ningún <b>${raza || 'perro'}</b> supera el 25% de similitud con IA.`;
     cont.innerHTML = '';
     return;
   }
@@ -273,10 +279,8 @@ function toast(msg){
 function toggleTheme(){
   const isDark = document.body.classList.toggle('dark');
   localStorage.setItem('darkMode', isDark ? 'true' : 'false');
-  // vibración suave en celular
   if(navigator.vibrate) navigator.vibrate(30);
 }
-// Cargar preferencia guardada
 (function(){
   if(localStorage.getItem('darkMode') === 'true'){
     document.body.classList.add('dark');
@@ -289,3 +293,45 @@ function mostrarModalIA(){
 function cerrarModalIA(){
   document.getElementById('modal-ia').classList.add('hidden');
 }
+
+function mostrarModalAdmin(){
+  document.getElementById('modal-admin').classList.remove('hidden');
+  document.getElementById('input-admin-pass').focus();
+}
+function cerrarModalAdmin(){
+  document.getElementById('modal-admin').classList.add('hidden');
+  document.getElementById('input-admin-pass').value = '';
+  document.getElementById('admin-error').classList.add('hidden');
+}
+function togglePass(){
+  const input = document.getElementById('input-admin-pass');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+function verificarAdmin(){
+  const input = document.getElementById('input-admin-pass');
+  const pass = input.value.trim();
+  
+  if(pass === ADMIN_PASSWORD){
+    isAdmin = true;
+    localStorage.setItem('isAdmin','true');
+    cerrarModalAdmin();
+    toast('✅ Modo Admin activado');
+    actualizarContador(); 
+    mostrarTodos(); 
+    mostrarPerdidos();
+  } else {
+    document.getElementById('admin-error').classList.remove('hidden');
+    input.value = '';
+    input.focus();
+  }
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && !document.getElementById('modal-admin').classList.contains('hidden')){
+    verificarAdmin();
+  }
+  if(e.key === 'Escape'){
+    cerrarModalAdmin();
+  }
+});

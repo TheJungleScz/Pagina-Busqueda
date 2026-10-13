@@ -128,8 +128,26 @@
       </div>
       <h3>¡Necesitamos una fotito! 📸</h3>
       <p>Para que nuestra IA pueda comparar caritas, pelaje y color, por favor sube una foto de tu mascota perdida.</p>
-      <span class="modal-ia-sub">Con una sola foto la IA analiza si es pitbull, su color y lo compara con todos los encontrados.</span>
+      <span class="modal-ia-sub">Con una sola foto la IA analiza su raza, su color y lo compara con todos los encontrados.</span>
       <button onclick="cerrarModalIA()" class="modal-ia-btn">Entendido, subiré una foto 🐶</button>
+    </div>
+  </div>
+  <div id="modal-admin" class="modal-overlay hidden">
+    <div class="modal-admin-card">
+      <button class="modal-admin-close" onclick="cerrarModalAdmin()">✕</button>
+    
+      <div class="modal-admin-icon">🔐</div>
+      <h3>Acceso Administrador</h3>
+      <p>Área restringida. Ingresa la contraseña para continuar.</p>
+
+      <div class="admin-input-wrap">
+        <input type="password" id="input-admin-pass" placeholder="Contraseña" autocomplete="off">
+        <span class="admin-eye" onclick="togglePass()">👁️</span>
+      </div>
+      <span id="admin-error" class="admin-error hidden">Contraseña incorrecta</span>
+
+      <button onclick="verificarAdmin()" class="modal-admin-btn">Entrar al panel</button>
+      <span class="admin-hint">Solo personal autorizado</span>
     </div>
   </div>
 </body>
