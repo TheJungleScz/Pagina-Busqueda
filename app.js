@@ -1,5 +1,42 @@
 const ADMIN_PASSWORD = "huellas2026";
 
+let modeloIA = null;
+let embeddingsEncontrados = JSON.parse(localStorage.getItem('embeddingsEncontrados')) || [];
+
+async function cargarIA(){
+  console.log('🧠 Cargando IA...');
+  modeloIA = await mobilenet.load({version:2, alpha:1.0});
+  console.log('✅ IA lista');
+  document.getElementById('cargando').innerText = '🧠 IA cargada - Lista para buscar';
+}
+cargarIA();
+
+function base64ToImg(base64){
+  return new Promise(res=>{
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = ()=>res(img);
+    img.src = base64;
+  });
+}
+
+async function getEmbedding(base64){
+  if(!modeloIA) return null;
+  const img = await base64ToImg(base64);
+  const tensor = tf.browser.fromPixels(img).resizeBilinear([224,224]).expandDims(0).toFloat().div(255);
+  const embedding = modeloIA.infer(tensor, 'conv_preds');
+  const data = await embedding.data();
+  tensor.dispose(); embedding.dispose();
+  return Array.from(data); 
+}
+
+function similitudCoseno(a,b){
+  if(!a||!b||a.length!==b.length) return 0;
+  let dot=0, normA=0, normB=0;
+  for(let i=0;i<a.length;i++){ dot+=a[i]*b[i]; normA+=a[i]*a[i]; normB+=b[i]*b[i]; }
+  return dot / (Math.sqrt(normA)*Math.sqrt(normB));
+}
+
 let myId = localStorage.getItem('myId');
 if(!myId){ myId = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); localStorage.setItem('myId', myId); }
 let isAdmin = localStorage.getItem('isAdmin') === 'true';
@@ -75,17 +112,23 @@ configurarSubida('zona-lost','file-lost','preview-lost', d=>fotoPerdidoBase64=d)
 configurarSubida('zona-found','file-found','preview-found', d=>fotoEncontradoBase64=d);
 configurarSubida('zona-lost-pub','file-lost-pub','preview-lost-pub', d=>fotoPerdidoPubBase64=d);
 
-function publicarEncontrado(){
+async function publicarEncontrado(){
   const desc = document.getElementById('desc-found').value;
   const raza = document.getElementById('raza-found').value;
   const color = document.getElementById('color-found').value;
   const zona = document.getElementById('zona-found-input').value;
   const contacto = document.getElementById('contact-found').value;
   if(!fotoEncontradoBase64 ||!desc){ alert('Foto y descripción obligatorias'); return; }
+
+  toast('🧠 Analizando imagen con IA...');
+  const emb = await getEmbedding(fotoEncontradoBase64);
+
   const nuevo = { id: Date.now(), raza, color, zona, desc, contacto, img: fotoEncontradoBase64, ownerId: myId };
   perrosEncontrados.push(nuevo);
+  embeddingsEncontrados.push(emb);
   guardar();
-  toast('¡Publicado en Encontrados!');
+  localStorage.setItem('embeddingsEncontrados', JSON.stringify(embeddingsEncontrados));
+  toast('¡Publicado con huella de IA!');
   cambiarTab('todos');
 }
 
@@ -103,40 +146,55 @@ function publicarPerdido(){
   cambiarTab('perdidos');
 }
 
-function buscarPerdido(){
-  const desc = document.getElementById('desc-lost').value.toLowerCase();
+async function buscarPerdido(){
+  const desc = document.getElementById('desc-lost').value.toLowerCase().trim();
   const raza = document.getElementById('raza-lost').value.toLowerCase().trim();
   const color = document.getElementById('color-lost').value.toLowerCase().trim();
+  const zona = document.getElementById('zona-lost-input').value.toLowerCase().trim();
+
+  if(!fotoPerdidoBase64){ alert('Sube una foto de tu perdido para que la IA lo analice'); return; }
+  if(!modeloIA){ alert('La IA aún está cargando, espera 5 segundos'); return; }
+
   document.getElementById('cargando').classList.remove('hidden');
-  setTimeout(()=>{
-    document.getElementById('cargando').classList.add('hidden');
-    let filtrados = perrosEncontrados;
-    if(raza!== ''){
-      filtrados = perrosEncontrados.filter(p => p.raza.toLowerCase().includes(raza));
+  document.getElementById('cargando').innerText = '🧠 IA analizando tu foto...';
+
+  const embBusqueda = await getEmbedding(fotoPerdidoBase64);
+
+  let conScore = perrosEncontrados.map((p,i)=>{
+    let score = 0;
+    const simImg = embeddingsEncontrados[i]? similitudCoseno(embBusqueda, embeddingsEncontrados[i]) : 0;
+    const scoreImg = Math.round(simImg * 70); 
+
+    let scoreTexto = 0;
+    if(raza && p.raza.toLowerCase().includes(raza)) scoreTexto += 10;
+    if(color && p.color.toLowerCase().includes(color)) scoreTexto += 5;
+    if(zona && p.zona.toLowerCase().includes(zona)) scoreTexto += 5;
+    if(desc){
+      let palabras = desc.split(' ').filter(w=>w.length>3);
+      let comunes = palabras.filter(w=> p.desc.toLowerCase().includes(w)).length;
+      scoreTexto += Math.min(10, comunes * 2);
     }
-    const cont = document.getElementById('resultados');
-    const sinRes = document.getElementById('sin-resultados');
-    if(filtrados.length === 0){
-      sinRes.classList.remove('hidden');
-      sinRes.innerHTML = `❌ No hay perros de raza <b>${raza}</b> encontrados.`;
-      cont.innerHTML = '';
-      return;
-    }
-    sinRes.classList.add('hidden');
-    let conScore = filtrados.map(p=>{
-      let score = 50 + Math.random()*20;
-      if(raza!== '') score += 25;
-      if(color && p.color.toLowerCase().includes(color)) score+=15;
-      if(desc){
-        let palabras = desc.split(' ').filter(w=>w.length>3);
-        let comunes = palabras.filter(w=> p.desc.toLowerCase().includes(w)).length;
-        score += Math.min(15, comunes*4);
-      }
-      return {...p, score: Math.min(98, Math.round(score))};
-    }).sort((a,b)=>b.score-a.score);
+
+    score = scoreImg + scoreTexto;
+
+    if(fotoPerdidoBase64 === p.img) score = 100;
+
+    return {...p, score: Math.min(100, Math.max(10, Math.round(score)))};
+  }).sort((a,b)=>b.score-a.score).filter(p=>p.score >= 25);
+
+  document.getElementById('cargando').classList.add('hidden');
+  const cont = document.getElementById('resultados');
+  const sinRes = document.getElementById('sin-resultados');
+
+  if(conScore.length===0){
+    sinRes.classList.remove('hidden');
+    sinRes.innerHTML = `❌ Ningún perro supera el 25% de similitud con IA.`;
     cont.innerHTML = '';
-    conScore.forEach(p=>{ cont.innerHTML += crearCard(p, true); });
-  }, 800);
+    return;
+  }
+  sinRes.classList.add('hidden');
+  cont.innerHTML = '';
+  conScore.forEach(p=>{ cont.innerHTML += crearCard(p, true); });
 }
 
 function crearCard(p, conScore){
