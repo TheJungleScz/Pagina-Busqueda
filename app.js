@@ -4,6 +4,7 @@ let myId = localStorage.getItem('myId');
 if(!myId){ myId = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); localStorage.setItem('myId', myId); }
 let isAdmin = localStorage.getItem('isAdmin') === 'true';
 
+const EJEMPLOS = [];
 let perrosEncontrados = JSON.parse(localStorage.getItem('perros')) || EJEMPLOS;
 let perrosPerdidos = JSON.parse(localStorage.getItem('perrosPerdidos')) || [];
 
