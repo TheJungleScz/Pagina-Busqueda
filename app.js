@@ -4,11 +4,6 @@ let myId = localStorage.getItem('myId');
 if(!myId){ myId = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); localStorage.setItem('myId', myId); }
 let isAdmin = localStorage.getItem('isAdmin') === 'true';
 
-const EJEMPLOS = [
-  {id:1, raza:'Pitbull', color:'gris', zona:'Barrio Norte', desc:'Pitbull gris collar negro, muy dócil', img:'https://images.unsplash.com/photo-1583512603805-3cc6b8da5027?w=500', contacto:'70000001', ownerId:'system'},
-  {id:2, raza:'Labrador', color:'negro', zona:'Av. Principal', desc:'Labrador negro joven pañoleta azul', img:'https://images.unsplash.com/photo-1552053831-71594a27632d?w=500', contacto:'70000002', ownerId:'system'},
-  {id:3, raza:'Criollo', color:'marrón', zona:'Plaza Central', desc:'Criollo marrón mancha blanca en pecho', img:'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=500', contacto:'70000003', ownerId:'system'},
-];
 let perrosEncontrados = JSON.parse(localStorage.getItem('perros')) || EJEMPLOS;
 let perrosPerdidos = JSON.parse(localStorage.getItem('perrosPerdidos')) || [];
 
