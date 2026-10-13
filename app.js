@@ -216,7 +216,7 @@ function crearCard(p, conScore){
 function crearCardPerdido(p){
   const esMio = p.ownerId === myId;
   const claseMio = esMio? 'card-mio' : '';
-  const badgeMio = esMio? '<span class="mio-badge">MI PERDIDO</span>' : '';
+  const badgeMio = esMio? '<span class="mio-badge">MI PERRO PERDIDO</span>' : '';
   let botones = '';
   if(esMio){
     botones = `<button onclick="borrarMiPerdido(${p.id})" class="btn-borrar-mio" style="background:#d32f2f">✅ Ya lo encontré - Borrar</button>`;
