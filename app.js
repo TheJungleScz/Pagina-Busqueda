@@ -152,7 +152,7 @@ async function buscarPerdido(){
   const color = document.getElementById('color-lost').value.toLowerCase().trim();
   const zona = document.getElementById('zona-lost-input').value.toLowerCase().trim();
 
-  if(!fotoPerdidoBase64){ alert('Sube una foto de tu perdido para que la IA lo analice'); return; }
+  if(!fotoPerdidoBase64){ if (!fotoPerdidoBase64) { mostrarModalIA(); return; }
   if(!modeloIA){ alert('La IA aún está cargando, espera 5 segundos'); return; }
 
   document.getElementById('cargando').classList.remove('hidden');
@@ -282,3 +282,10 @@ function toggleTheme(){
     document.body.classList.add('dark');
   }
 })();
+
+function mostrarModalIA(){
+  document.getElementById('modal-ia').classList.remove('hidden');
+}
+function cerrarModalIA(){
+  document.getElementById('modal-ia').classList.add('hidden');
+}
